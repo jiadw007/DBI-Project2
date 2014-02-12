@@ -387,6 +387,15 @@ void Record :: Print (Schema *mySchema) {
 
 	cout << "\n";
 }
+PriorityQueueRecord ::PriorityQueueRecord(const Record record, int run): record(record), run(run){
+
+}
+
+int PriorityQueueRecord :: getRun(){
+
+    return run;
+}
+
 
 
 

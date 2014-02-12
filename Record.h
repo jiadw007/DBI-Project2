@@ -68,5 +68,19 @@ public:
 	// that the schema also be given so that the record can be interpreted
 	void Print (Schema *mySchema);
 };
+class PriorityQueueRecord{
 
+private:
+    int run;
+
+public:
+
+    Record record;
+
+    PriorityQueueRecord(const Record record, int run)();
+    int getRun();
+
+
+
+}
 #endif

@@ -21,7 +21,7 @@ Run :: Run(const Run &run){
 
 }
 
-Run& Run::operator =(const Run& run){
+Run& Run :: operator =(const Run& run){
 
     runId = run.runId;
     start_offset = run.start_offset;
@@ -33,7 +33,7 @@ Run& Run::operator =(const Run& run){
     sortedFile->GetPage(&page,cur_offset);
 
 }
-bool Run::getNextRecord(Record& toMe){
+bool Run :: getNextRecord(Record& toMe){
 
     if(1 == page.GetFirst(&record)){// if there is a record in the page
 
@@ -57,11 +57,11 @@ bool Run::getNextRecord(Record& toMe){
     }
 
 }
-void Run ::print(){
+void Run :: print(){
 
     cout << "Run " << runId << ", start_offset: " << start_offset <<", end_offset" << end_offset << endl;
 }
-Run ::~Run(){
+Run :: ~Run(){
 
     cout << "Run destructor called" << endl;
     cout << "Destroy run " << runId << endl;

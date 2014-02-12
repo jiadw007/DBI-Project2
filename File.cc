@@ -10,7 +10,7 @@
 
 
 
-Page :: Page () {
+Page :: Page (){
 	curSizeInBytes = sizeof (int);
 	numRecs = 0;
 
@@ -155,7 +155,7 @@ void Page :: FromBinary (char *bits) {
 	delete temp;
 }
 
-File :: File () {
+File :: File ():myFilDes(0), curLength(0) {
 }
 
 File :: ~File () {

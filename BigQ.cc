@@ -1,15 +1,19 @@
 #include "BigQ.h"
 #include <vector>
-#include<queue>
+#include <queue>
 #include <cstdlib>
 #include <iostream>
 #include <algorithm>
 #include <cstdio>
 #include <utility>
 #include <cassert>
-#include<iterator>
+#include <iterator>
+#include "Run.h"
 
-BigQ :: BigQ(Pipe &in, Pipe &out, OrderMaker &sortorder, int runlen): in(in),out(out), sortorder(sortorder), runlen(runlen){
+using namespace std;
+
+BigQ :: BigQ(Pipe &in, Pipe &out, OrderMaker &sortorder, int runlen)
+    : in(in),out(out), sortorder(sortorder), runlen(runlen),sortedFile(),runLocations(){
 
     pthread_create(&worker_thread, NULL, &BigQ::thread_starter, this);
 }
@@ -27,7 +31,11 @@ void* BigQ :: WorkerThread(){
     PhaseOne();
     cout << "total Records: " <<totalRecords << endl;
     //merge all runs
-    PhaseTwo();
+    static const int runThreshold = 200;
+    if( runThreshold >= runCount)
+        PhaseTwoLinearScan();
+    else
+        PhaseTwoPriorityQueue();
     sortedFile.Close();
     out.ShutDown();
     pthread_exit(NULL);
@@ -136,32 +144,123 @@ void BigQ :: writeSortedRunToFile(vector<Record>& runlenRecords){
     cout << "end writing" << endl;
     cout << "insert " << pageEnd - pageStart << " pages" << endl;
     //record which page each run start and end
-    runlocations.push_back((make_pair(pageStart, pageEnd)));
+    runLocations.push_back((make_pair(pageStart, pageEnd)));
 
 }
-void BigQ :: PhaseTwo(){
+void BigQ :: PhaseTwoLinearScan(){
 
     //builds an in-memory priority queue over the head of each run
     //use the queue to merge the records from all of runs.
     //PAHSE TWO
-
-    cout << "merge sorted runs" << endl;
+    cout << "Linear scan merge sorted runs" << endl;
     cout << "total runs: " << runCount << endl;
     cout << "total Pages: " << sortedFile.GetLength()<< endl;
-    off_t pageCount = this->sortedFile.GetLength() - 1;
-    for(off_t curPage = 0; curPage < pageCount; curPage++){
+    for(vector<pair<off_t, off_t>>:: iterator it = runLocations.begin(); it < runLocations.end(); it++){
 
-        Page page;
-        this->sortedFile.GetPage(&page,curPage);
+        cout << "from " << (*it).first << " to" << (*it).second << endl;
+    }
+    //merge runs in the linear scanning
+    vector<Run> runs;
+    runs.reserve(runCount);
+    for(int i =0; i < runCount; i++){
+
+        cout << "Run " << i;]
+        runs.push_back(Run(i, runLocations[i].first, runLocations[i].second, &sortedFile));
+        runs[i].print();
+    }
+    vector<Record> minimums;
+    minimums.reserve(runCount);
+    for(int i =0;i < runCount; i++){
+
         Record record;
-        while(1 == page.GetFirst(&record)){
+        runs[i].getNextRecord(record);
+        minimums.push_back(record);
+    }
 
-            out.Insert(&record);
+    //find the minimum record and put it in the out pipe
+    //loop for totalRecord times
+    Sorter sorter = Sorter(sortorder);
+    int runsLeft = runCount;
+    for(int count = totalRecords; count > 0; count--){
 
+        vector<Record> :: iterator min_record = min_element(minimums.begin(), minimums.end()(),sorter);
+        vector<Record> ::iterator::difference_type run = distance(minimums.begin(), min);
+        Record record;
+        record.Consume(&(minimums[run]);
+        out.Insert(&record);
+        bool valid = runs[run].getNextRecord(record);
+        if(true == valid)
+            minimums[run].Consume(&record);
+        else{
+            cout << "Run " << run <<" is empty " << endl;
+            runsleft--;
+            minimums.erase(minimums.begin()() + run);
+            runs.erase(runs.begin() + run);
         }
+    }
+    cout << minimums.size() << runs.size() << endl;
+    assert(0 == runsLeft);
+    cout << "Phase Two Completed" << endl;
+}
 
+void BigQ ::PhaseTwoPriorityQueue(){
+
+    //builds an in-memory priority queue over the head of each run
+    //use the queue to merge the records from all of runs.
+    //PAHSE TWO
+    cout << "PriorityQueue merge sorted runs" << endl;
+    cout << "total runs: " << runCount << endl;
+    cout << "total Pages: " << sortedFile.GetLength()<< endl;
+    for(vector<pair<off_t, off_t>>:: iterator it = runLocations.begin(); it < runLocations.end(); it++){
+
+        cout << "from " << (*it).first << " to" << (*it).second << endl;
+    }
+    //merge runs in the priority queue
+    vector<Run> runs;
+    runs.reserve(runCount);
+    for(int i =0; i < runCount; i++){
+
+        cout << "Run " << i;]
+        runs.push_back(Run(i, runLocations[i].first, runLocations[i].second, &sortedFile));
+        runs[i].print();
+    }
+    priority_queue<PriorityQueueRecord, vector<PriorityQueueRecord>, PriorityQueueSorter> minimums (sorter);
+
+    for(int i = 0; i < runCount; i++){
+
+        Record record;
+        runs[i].getNextRecord(record);
+        minimums.push(PriorityQueueRecord(record, i));
 
     }
+    //find the minimum record and put it in the out pipe
+    //loop for totalRecord times
+    int runsLeft = runCount;
+    int output = 0;
+    for(int count = totalRecords; count > 0; count--){
+
+        PriorityQueueRecord pqRecord(minimums.top());
+        Record record(pqRecord.record);
+
+        int run = pqRecord.getRun();
+        output++;
+        out.Insert(&record);
+        minimums.pop();
+        bool valid = runs[run].getNextRecord(record);
+        if(true == valid)
+            minimums.push(PriorityQueueRecord(record, run));
+        else{
+
+            cout << "Run " << run <<" is empty " << endl;
+            runsleft--;
+
+        }
+    }
+    assert(output == totalRecord);
+    assert(0 == runsLeft);
+    cout<< "Phase Two Completed" << endl;
+
+
 
 }
 BigQ::~BigQ () {

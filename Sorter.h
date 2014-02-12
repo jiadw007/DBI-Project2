@@ -1,10 +1,11 @@
 #ifndef SORTER_H
 #define SORTER_H
-
-using namespace std;
 #include "Comparison.h"
 #include "ComparisonEngine.h"
 #include "Record.h"
+
+using namespace std;
+
 class Sorter : binary_function<Record *, Record *, bool>{
 
 private:
@@ -19,5 +20,16 @@ public:
     ~Sorter();
 
 };
+
+class PriorityQueueSorter : binary_function<PriorityQueueRecord *, PriorirtyQueueRecord * ,bool>{
+
+private:
+    OrderMaker * om;
+public:
+    PriorityQueueSorter(OrderMaker om);
+    bool operator()(const PriorityQueueRecord& first_record, const PriorityQueueRecord& second_record);
+    ~PriorityQueueSorter();
+
+}
 
 #endif // SORTER_H

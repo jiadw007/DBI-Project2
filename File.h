@@ -49,7 +49,9 @@ class File {
 private:
 
 	int myFilDes;
-	off_t curLength; 
+    off_t curLength;
+    Page(const Page &);
+    Page operator=(const Page &);
 
 public:
 

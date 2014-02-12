@@ -28,5 +28,3 @@ Sorter.h
 Sorter.cpp
 Run.h
 Run.cpp
-PriorityQueue.h
-PriorityQueue.cpp
